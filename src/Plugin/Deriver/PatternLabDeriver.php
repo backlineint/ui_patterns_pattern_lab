@@ -29,9 +29,43 @@ class PatternLabDeriver extends LibraryDeriver {
    */
   public function getPatterns() {
     $patterns = [];
-    foreach ($this->getDirectories() as $provider => $directory) {
-      // TODO - allow directories outside of /templates (via twig namespaces?)
-      $directory = $directory . "/templates";
+    $themes = [];
+
+    // Get a list of the path to /templates in all active modules and themes
+    $active_directories = $this->getDirectories();
+    foreach ($active_directories as $provider => $path) {
+      $active_directories[$provider] = $path . "/templates";
+    }
+
+    // Get the list of currently active default theme and related base themes
+    $theme_handler = \Drupal::service('theme_handler');
+    $default_theme = $theme_handler->getDefault();
+    $themes[$default_theme] = $default_theme;
+    $base_themes = $theme_handler->getBaseThemes($theme_handler->listInfo(), $default_theme);
+    $themes = $themes + $base_themes;
+
+    // Determine the paths to any defined component libraries.
+    $namespace_paths = [];
+    foreach ($themes as $theme => $item) {
+      $theme_config = $theme_handler->getTheme($theme);
+      if (isset($theme_config->info["component-libraries"])) {
+        foreach ($theme_config->info["component-libraries"] as $namespace => $path) {
+          foreach($path['paths'] as $key => $path_item) {
+            $root = $this->root;
+            $subpath = $theme_config->getPath();
+            $namespace_path = $path_item;
+            $provider = $theme . "@" . $namespace . "_" . $key;
+            $namespace_paths[$provider] =  $root . "/" . $subpath . "/" . $namespace_path;
+          }
+        }
+      }
+    }
+
+    // Combine module, theme, and component library paths
+    $all_directories = $active_directories + $namespace_paths;
+
+    // Traverse directories looking for pattern definitions
+    foreach ($all_directories as $provider => $directory) {
       foreach ($this->fileScanDirectory($directory) as $file_path => $file) {
         $absolute_base_path = dirname($file_path);
         $base_path = str_replace($this->root, "", $absolute_base_path);
@@ -61,7 +95,9 @@ class PatternLabDeriver extends LibraryDeriver {
         $definition['id'] = $id;
         $definition['base path'] = dirname($file_path);
         $definition['file name'] = $absolute_base_path;
-        $definition['provider'] = $provider;
+        // If pattern is provided by a twig namespace, pass just the theme name
+        // as the provider
+        $definition['provider'] = array_shift(explode("@", $provider));
 
         // Set other pattern values.
         # The label is typically displayed in any UI navigation items that
@@ -71,7 +107,6 @@ class PatternLabDeriver extends LibraryDeriver {
         $definition['description'] = $this->getDescription($content, $absolute_base_path, $id);
         $definition['fields'] = $this->getFields($content);
         $definition['libraries'] = $this->getLibraries($id, $absolute_base_path);
-        $debug = TRUE;
 
         // Override patterns behavior.
         // Use a stand-alone Twig file as template.
