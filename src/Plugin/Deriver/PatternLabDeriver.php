@@ -104,7 +104,7 @@ class PatternLabDeriver extends LibraryDeriver {
         # The label is typically displayed in any UI navigation items that
         # refer to the component. Defaults to a title-cased version of the
         # component name if not specified.
-        $definition['label'] = isset($content['ui_pattern_definition']['label']) ? $content['ui_pattern_definition']['label'] : ucwords(urldecode($id));
+        $definition['label'] = isset($content['ui_pattern_definition']['label']) ? $content['ui_pattern_definition']['label'] : ucwords(urldecode(str_replace("-", "_", $id)));
         $definition['description'] = $this->getDescription($content, $absolute_base_path, $id);
         $definition['fields'] = $this->getFields($content);
         $definition['libraries'] = $this->getLibraries($id, $absolute_base_path);
