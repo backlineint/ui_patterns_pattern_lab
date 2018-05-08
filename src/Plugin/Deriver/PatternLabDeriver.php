@@ -90,6 +90,10 @@ class PatternLabDeriver extends LibraryDeriver {
         if (empty($content)) {
           continue;
         }
+        // Skip pattern if overriden and set to ignore.
+        if (isset($content['ui_pattern_definition']['ignore']) && $content['ui_pattern_definition']['ignore'] == TRUE) {
+          continue;
+        }
 
         // Set pattern meta.
         // Convert hyphens to underscores so that the pattern id will validate.
