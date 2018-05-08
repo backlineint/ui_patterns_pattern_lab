@@ -92,7 +92,8 @@ class PatternLabDeriver extends LibraryDeriver {
         }
 
         // Set pattern meta.
-        $definition['id'] = $id;
+        // Convert hyphens to underscores so that the pattern id will validate.
+        $definition['id'] = str_replace("-", "_", $id);
         $definition['base path'] = dirname($file_path);
         $definition['file name'] = $absolute_base_path;
         // If pattern is provided by a twig namespace, pass just the theme name
