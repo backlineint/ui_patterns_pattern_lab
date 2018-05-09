@@ -72,11 +72,6 @@ class PatternLabDeriver extends LibraryDeriver {
         $id = $file->name;
         $definition = [];
 
-        // We need a Twig file to have a valid pattern.
-        if (!file_exists($absolute_base_path . "/" . $id . ".twig")) {
-          continue;
-        }
-
         // Parse definition file.
         $content = [];
         if (preg_match('/\.yml$/', $file_path)) {
@@ -87,9 +82,17 @@ class PatternLabDeriver extends LibraryDeriver {
           $content = file_get_contents($file_path);
           $content = Json::decode($content);
         }
+
+        // Pattern definition needs to have some valid content
         if (empty($content)) {
           continue;
         }
+
+        // We need a Twig file to have a valid pattern.
+        if (!$this->templateExists($content, $absolute_base_path, $id)) {
+          continue;
+        }
+
         // Skip pattern if overriden and set to ignore.
         if (isset($content['ui_pattern_definition']['ignore']) && $content['ui_pattern_definition']['ignore'] == TRUE) {
           continue;
@@ -115,13 +118,29 @@ class PatternLabDeriver extends LibraryDeriver {
 
         // Override patterns behavior.
         // Use a stand-alone Twig file as template.
-        $definition["use"] = $base_path . "/" . $id . ".twig";
+        $definition["use"] = $this->getTemplatePath($content, $base_path, $id);
 
         // Add pattern to collection.
         $patterns[] = $this->getPatternDefinition($definition);
       }
     }
     return $patterns;
+  }
+
+  /**
+   *
+   */
+  private function templateExists($content, $base_path, $id) {
+    // If a Twig template is explicitly defined, use that...
+    if (isset($content['ui_pattern_definition']['use'])) {
+      // Strip out only the file name in case a path was provided in the use value
+      $template_file = end(explode("/", $content['ui_pattern_definition']['use']));
+      return file_exists($base_path . "/" . $template_file) ? TRUE : FALSE;
+    }
+    // Otherwise look for a template with the same name as the pattern deifnition file.
+    else {
+      return file_exists($base_path . "/" . $id . ".twig") ? TRUE : FALSE;
+    }
   }
 
   /**
@@ -211,6 +230,22 @@ class PatternLabDeriver extends LibraryDeriver {
     }
 
     return $libraries;
+  }
+
+  /**
+   *
+   */
+  private function getTemplatePath($content, $base_path, $id) {
+    // If a Twig template is explicitly defined, use that...
+    if (isset($content['ui_pattern_definition']['use'])) {
+      // Strip out only the file name in case a path was provided in the use value
+      $template_file = end(explode("/", $content['ui_pattern_definition']['use']));
+      return $base_path . "/" . $template_file;
+    }
+    // Otherwise look for a template with the same name as the pattern deifnition file.
+    else {
+      return $base_path . "/" . $id . ".twig";
+    }
   }
 
 }
