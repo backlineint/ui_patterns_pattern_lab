@@ -119,7 +119,7 @@ class PatternLabDeriver extends LibraryDeriver {
 
         // Override patterns behavior.
         // Use a stand-alone Twig file as template.
-        $definition["use"] = $this->getTemplatePath($content, $base_path, $id);
+        $definition["use"] = $this->getTemplatePath($content, $base_path, $absolute_base_path, $id);
 
         // Add pattern to collection.
         $patterns[] = $this->getPatternDefinition($definition);
@@ -131,16 +131,21 @@ class PatternLabDeriver extends LibraryDeriver {
   /**
    *
    */
-  private function templateExists($content, $base_path, $id) {
+  private function templateExists($content, $absolute_base_path, $id) {
     // If a Twig template is explicitly defined, use that...
     if (isset($content['ui_pattern_definition']['use'])) {
       // Strip out only the file name in case a path was provided in the use value
       $template_file = end(explode("/", $content['ui_pattern_definition']['use']));
-      return file_exists($base_path . "/" . $template_file) ? TRUE : FALSE;
+      return file_exists($absolute_base_path . "/" . $template_file) ? TRUE : FALSE;
     }
-    // Otherwise look for a template with the same name as the pattern deifnition file.
+    // Otherwise look for a template that contains the same name as the pattern deifnition file.
     else {
-      return file_exists($base_path . "/" . $id . ".twig") ? TRUE : FALSE;
+      if (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_") . ".twig")) != NULL) {
+        return TRUE;
+      }
+      else {
+        return FALSE;
+      }
     }
   }
 
@@ -236,16 +241,24 @@ class PatternLabDeriver extends LibraryDeriver {
   /**
    *
    */
-  private function getTemplatePath($content, $base_path, $id) {
+  private function getTemplatePath($content, $base_path, $absolute_base_path, $id) {
     // If a Twig template is explicitly defined, use that...
     if (isset($content['ui_pattern_definition']['use'])) {
       // Strip out only the file name in case a path was provided in the use value
       $template_file = end(explode("/", $content['ui_pattern_definition']['use']));
       return $base_path . "/" . $template_file;
     }
-    // Otherwise look for a template with the same name as the pattern deifnition file.
-    else {
+    // Next try an exact match for a template with the same name as the
+    // pattern deifnition file.
+    elseif (file_exists($absolute_base_path . "/" . $id . ".twig")) {
       return $base_path . "/" . $id . ".twig";
+    }
+    // Finally, look for a match that contains the id. This allows for a template
+    // name that only differs by leading numbers for example.
+    else {
+      // Assuming here that the first match is our best option.
+      $closest_template = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_") . ".twig"));
+      return str_replace($absolute_base_path, $base_path, $closest_template);
     }
   }
 
