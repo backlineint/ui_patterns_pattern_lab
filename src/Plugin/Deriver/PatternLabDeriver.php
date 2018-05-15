@@ -100,7 +100,8 @@ class PatternLabDeriver extends LibraryDeriver {
 
         // Set pattern meta.
         // Convert hyphens to underscores so that the pattern id will validate.
-        $definition['id'] = str_replace("-", "_", $id);
+        // Also strip initial numbers that are ignored by Pattern Lab when naming.
+        $definition['id'] = ltrim(str_replace("-", "_", $id), "0..9_");
         $definition['base path'] = dirname($file_path);
         $definition['file name'] = $absolute_base_path;
         // If pattern is provided by a twig namespace, pass just the theme name
@@ -111,7 +112,7 @@ class PatternLabDeriver extends LibraryDeriver {
         # The label is typically displayed in any UI navigation items that
         # refer to the component. Defaults to a title-cased version of the
         # component name if not specified.
-        $definition['label'] = isset($content['ui_pattern_definition']['label']) ? $content['ui_pattern_definition']['label'] : ucwords(urldecode(str_replace("-", "_", $id)));
+        $definition['label'] = isset($content['ui_pattern_definition']['label']) ? $content['ui_pattern_definition']['label'] : ucwords(urldecode($definition['id']));
         $definition['description'] = $this->getDescription($content, $absolute_base_path, $id);
         $definition['fields'] = $this->getFields($content);
         $definition['libraries'] = $this->getLibraries($id, $absolute_base_path);
