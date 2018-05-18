@@ -297,7 +297,8 @@ class PatternLabDeriver extends LibraryDeriver {
     elseif (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_") . ".md")) != NULL) {
       // Assuming here that the first match is our best option.
       $closest_md = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_") . ".md"));
-      return YamlFrontMatter::parse($closest_md);
+      $md = file_get_contents($closest_md);
+      return YamlFrontMatter::parse($md);
     }
     // If we can't find any .md file return an empty YamlFrontMatter object.
     else {
