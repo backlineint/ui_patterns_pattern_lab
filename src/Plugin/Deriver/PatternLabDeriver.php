@@ -144,7 +144,7 @@ class PatternLabDeriver extends LibraryDeriver {
     }
     // Otherwise look for a template that contains the same name as the pattern deifnition file.
     else {
-      if (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_") . ".twig")) != NULL) {
+      if (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".twig")) != NULL) {
         return TRUE;
       }
       else {
@@ -277,7 +277,7 @@ class PatternLabDeriver extends LibraryDeriver {
     // name that only differs by leading numbers for example.
     else {
       // Assuming here that the first match is our best option.
-      $closest_template = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_") . ".twig"));
+      $closest_template = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".twig"));
       return str_replace($absolute_base_path, $base_path, $closest_template);
     }
   }
@@ -294,9 +294,9 @@ class PatternLabDeriver extends LibraryDeriver {
     }
     // Otherwise, look for a match that contains the id. This allows for a markdown
     // name that only differs by leading numbers for example.
-    elseif (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_") . ".md")) != NULL) {
+    elseif (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".md")) != NULL) {
       // Assuming here that the first match is our best option.
-      $closest_md = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_") . ".md"));
+      $closest_md = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".md"));
       $md = file_get_contents($closest_md);
       return YamlFrontMatter::parse($md);
     }
