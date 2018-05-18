@@ -5,6 +5,7 @@ namespace Drupal\ui_patterns_pattern_lab\Plugin\Deriver;
 use Drupal\Component\Serialization\Yaml;
 use Drupal\Component\Serialization\Json;
 use Drupal\ui_patterns_library\Plugin\Deriver\LibraryDeriver;
+use Spatie\YamlFrontMatter\YamlFrontMatter;
 
 /**
  * Class PatternLabDeriver.
@@ -98,6 +99,9 @@ class PatternLabDeriver extends LibraryDeriver {
           continue;
         }
 
+        // Parse markdown documentation if it exists
+        $documentation = $this->getDocumentation($absolute_base_path, $id);
+
         // Set pattern meta.
         // Convert hyphens to underscores so that the pattern id will validate.
         // Also strip initial numbers that are ignored by Pattern Lab when naming.
@@ -112,8 +116,8 @@ class PatternLabDeriver extends LibraryDeriver {
         # The label is typically displayed in any UI navigation items that
         # refer to the component. Defaults to a title-cased version of the
         # component name if not specified.
-        $definition['label'] = isset($content['ui_pattern_definition']['label']) ? $content['ui_pattern_definition']['label'] : ucwords(urldecode($definition['id']));
-        $definition['description'] = $this->getDescription($content, $absolute_base_path, $id);
+        $definition['label'] = $this->getLabel($content, $documentation, $definition['id']);
+        $definition['description'] = $this->getDescription($content, $documentation);
         $definition['fields'] = $this->getFields($content);
         $definition['libraries'] = $this->getLibraries($id, $absolute_base_path);
 
@@ -140,12 +144,30 @@ class PatternLabDeriver extends LibraryDeriver {
     }
     // Otherwise look for a template that contains the same name as the pattern deifnition file.
     else {
-      if (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_") . ".twig")) != NULL) {
+      if (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".twig")) != NULL) {
         return TRUE;
       }
       else {
         return FALSE;
       }
+    }
+  }
+
+  /**
+   *
+   */
+  private function getLabel($content, $documentation, $id) {
+    // If the label was manually overriden, use that.
+    if (isset($content['ui_pattern_definition']['label'])) {
+      return $content['ui_pattern_definition']['label'];
+    }
+    // If a title is included in documentaton frontmatter, use that.
+    elseif ($documentation->matter('title') !== NULL) {
+      return $documentation->matter('title');
+    }
+    // Otherwise, fall back on a cleaned up version of the id
+    else {
+      return ucwords(urldecode($id));
     }
   }
 
@@ -191,18 +213,16 @@ class PatternLabDeriver extends LibraryDeriver {
   /**
    *
    */
-  private function getDescription($content, $base_path, $id) {
-    // Any notes set here override content taken from the component’s README.md
-    // file, if there is one. Accepts markdown.
+  private function getDescription($content, $documentation) {
+    // If description was manually overriden, use that.
     if (isset($content['ui_pattern_definition']['description'])) {
       return $content['ui_pattern_definition']['description'];
     }
-    if (file_exists($base_path . "/" . $id . ".md")) {
-      $md = file_get_contents($base_path . "/" . $id . ".md");
-      // TODO: Markdown parsing.
-      return $md;
+    else {
+      // If there is a description in the body, return that. Otherwise this will
+      // return an empty string.
+      return $documentation->body();
     }
-    return "";
   }
 
   /**
@@ -257,8 +277,32 @@ class PatternLabDeriver extends LibraryDeriver {
     // name that only differs by leading numbers for example.
     else {
       // Assuming here that the first match is our best option.
-      $closest_template = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_") . ".twig"));
+      $closest_template = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".twig"));
       return str_replace($absolute_base_path, $base_path, $closest_template);
+    }
+  }
+
+  /**
+   *
+   */
+  private function getDocumentation($absolute_base_path, $id) {
+    // Try an exact match for a markdown file with the same name as the
+    // pattern definition file.
+    if (file_exists($absolute_base_path . "/" . $id . ".md")) {
+      $md = file_get_contents($absolute_base_path . "/" . $id . ".md");
+      return YamlFrontMatter::parse($md);
+    }
+    // Otherwise, look for a match that contains the id. This allows for a markdown
+    // name that only differs by leading numbers for example.
+    elseif (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".md")) != NULL) {
+      // Assuming here that the first match is our best option.
+      $closest_md = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".md"));
+      $md = file_get_contents($closest_md);
+      return YamlFrontMatter::parse($md);
+    }
+    // If we can't find any .md file return an empty YamlFrontMatter object.
+    else {
+      return YamlFrontMatter::parse("");
     }
   }
 
