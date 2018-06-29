@@ -19,9 +19,8 @@ trait PluginDataTransformTrait {
    *    Drupal render array.
    */
   private function includePatternFiles($preview) {
-    if (in_array("pattern", array_keys($preview))) {
+    if (is_array($preview) && in_array("pattern", array_keys($preview))) {
       // Advanced syntax
-      $render_array = $preview['with'];
       $render_array["type"] = "pattern";
       $shorthand = explode("-", $preview["pattern"]);
       $pattern_name = str_replace($shorthand[0] . '-', "", $preview["pattern"]);
@@ -49,7 +48,7 @@ trait PluginDataTransformTrait {
   private function joinTextValues($preview) {
     $render_arrays = [];
     foreach ($preview as $value) {
-      if (in_array("include()", array_keys($value))) {
+      if (is_array($value) && in_array("include()", array_keys($value))) {
         // https://github.com/aleksip/plugin-data-transform/issues/15
         $render_array = $this->includePatternFiles($value["include()"]);
       }
