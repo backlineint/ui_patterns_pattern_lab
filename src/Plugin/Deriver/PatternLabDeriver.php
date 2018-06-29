@@ -14,6 +14,8 @@ use Spatie\YamlFrontMatter\YamlFrontMatter;
  */
 class PatternLabDeriver extends LibraryDeriver {
 
+  use \Drupal\ui_patterns_pattern_lab\PluginDataTransformTrait;
+
   /**
    * {@inheritdoc}
    */
@@ -197,10 +199,35 @@ class PatternLabDeriver extends LibraryDeriver {
         // aspects of the pattern
         if ($field != 'ui_pattern_definition') {
           $fields[$field] = [
-            "label" => $field,
+            "label" => ucwords($field),
             "preview" => $preview,
           ];
         }
+
+        if (in_array("include()", array_keys($preview))) {
+          $fields[$field]["type"] = "render";
+          $fields[$field]["preview"][] = $this->includePatternFiles($preview["include()"]);
+          $fields[$field]["description"] = t('Rendering of a @pattern pattern.', 
+            ['@pattern' =>  $preview["include()"]["pattern"]]);
+        }
+
+        if (in_array("join()", array_keys($preview))) {
+          $fields[$field]["type"] = "render";
+          $fields[$field]["preview"] = $this->joinTextValues($preview["join()"]);
+          $fields[$field]["description"] = t('Rendering of patterns.', 
+            ['@pattern' =>  $preview["join()"]["pattern"]]);
+        }
+
+        if (in_array("Attribute()", array_keys($preview))) {
+          $fields[$field]["type"] = "Attribute";
+          $fields[$field]["preview"][] = $this->createAttributeObjects($preview["Attribute()"]);
+        }
+
+        if (in_array("Url()", array_keys($preview))) {
+          $fields[$field]["type"] = "Url";
+          $fields[$field]["preview"][] = $this->createUrlObjects($preview["Attribute()"]);
+        }
+
       }
     }
 
@@ -211,7 +238,7 @@ class PatternLabDeriver extends LibraryDeriver {
   }
 
   /**
-   *
+   * 
    */
   private function getDescription($content, $documentation) {
     // If description was manually overriden, use that.
