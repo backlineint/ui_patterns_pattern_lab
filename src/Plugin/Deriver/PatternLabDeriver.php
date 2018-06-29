@@ -112,7 +112,8 @@ class PatternLabDeriver extends LibraryDeriver {
         $definition['file name'] = $absolute_base_path;
         // If pattern is provided by a twig namespace, pass just the theme name
         // as the provider
-        $definition['provider'] = array_shift(explode("@", $provider));
+        $provider_array = explode("@", $provider);
+        $definition['provider'] = array_shift($provider_array);
 
         // Set other pattern values.
         # The label is typically displayed in any UI navigation items that
@@ -141,12 +142,15 @@ class PatternLabDeriver extends LibraryDeriver {
     // If a Twig template is explicitly defined, use that...
     if (isset($content['ui_pattern_definition']['use'])) {
       // Strip out only the file name in case a path was provided in the use value
-      $template_file = end(explode("/", $content['ui_pattern_definition']['use']));
+      $template_array = explode("/", $content['ui_pattern_definition']['use']);
+      $template_file = end($template_array);
       return file_exists($absolute_base_path . "/" . $template_file) ? TRUE : FALSE;
     }
     // Otherwise look for a template that contains the same name as the pattern deifnition file.
     else {
-      if (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".twig")) != NULL) {
+      $glob_paths = glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".twig");
+      $closest_template = array_shift($glob_paths);
+      if ($closest_template != NULL) {
         return TRUE;
       }
       else {
@@ -204,28 +208,28 @@ class PatternLabDeriver extends LibraryDeriver {
           ];
         }
 
-        if (in_array("include()", array_keys($preview))) {
+        if (is_array($preview) && in_array("include()", array_keys($preview)) && isset($preview["include()"])) {
           $fields[$field]["type"] = "render";
           $fields[$field]["preview"][] = $this->includePatternFiles($preview["include()"]);
           $fields[$field]["description"] = t('Rendering of a @pattern pattern.', 
             ['@pattern' =>  $preview["include()"]["pattern"]]);
         }
 
-        if (in_array("join()", array_keys($preview))) {
+        if (is_array($preview) && in_array("join()", array_keys($preview)) && isset($preview["join()"])) {
           $fields[$field]["type"] = "render";
           $fields[$field]["preview"] = $this->joinTextValues($preview["join()"]);
           $fields[$field]["description"] = t('Rendering of patterns.', 
             ['@pattern' =>  $preview["join()"]["pattern"]]);
         }
 
-        if (in_array("Attribute()", array_keys($preview))) {
+        if (is_array($preview) && in_array("Attribute()", array_keys($preview)) && isset($preview["Attribute()"])) {
           $fields[$field]["type"] = "Attribute";
           $fields[$field]["preview"][] = $this->createAttributeObjects($preview["Attribute()"]);
         }
 
-        if (in_array("Url()", array_keys($preview))) {
+        if (is_array($preview) && in_array("Url()", array_keys($preview)) && isset($preview["Url()"])) {
           $fields[$field]["type"] = "Url";
-          $fields[$field]["preview"][] = $this->createUrlObjects($preview["Attribute()"]);
+          $fields[$field]["preview"][] = $this->createUrlObjects($preview["Url()"]);
         }
 
       }
@@ -292,7 +296,8 @@ class PatternLabDeriver extends LibraryDeriver {
     // If a Twig template is explicitly defined, use that...
     if (isset($content['ui_pattern_definition']['use'])) {
       // Strip out only the file name in case a path was provided in the use value
-      $template_file = end(explode("/", $content['ui_pattern_definition']['use']));
+      $template_array = explode("/", $content['ui_pattern_definition']['use']);
+      $template_file = end($template_array);
       return $base_path . "/" . $template_file;
     }
     // Next try an exact match for a template with the same name as the
@@ -304,7 +309,8 @@ class PatternLabDeriver extends LibraryDeriver {
     // name that only differs by leading numbers for example.
     else {
       // Assuming here that the first match is our best option.
-      $closest_template = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".twig"));
+      $glob_paths = glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".twig");
+      $closest_template = array_shift($glob_paths);
       return str_replace($absolute_base_path, $base_path, $closest_template);
     }
   }
@@ -313,6 +319,8 @@ class PatternLabDeriver extends LibraryDeriver {
    *
    */
   private function getDocumentation($absolute_base_path, $id) {
+    $glob_paths = glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".md");
+    $closest_md = array_shift($glob_paths);
     // Try an exact match for a markdown file with the same name as the
     // pattern definition file.
     if (file_exists($absolute_base_path . "/" . $id . ".md")) {
@@ -321,9 +329,8 @@ class PatternLabDeriver extends LibraryDeriver {
     }
     // Otherwise, look for a match that contains the id. This allows for a markdown
     // name that only differs by leading numbers for example.
-    elseif (array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".md")) != NULL) {
+    elseif ($closest_md != NULL) {
       // Assuming here that the first match is our best option.
-      $closest_md = array_shift(glob($absolute_base_path . "/*" . ltrim($id, "0..9_-") . ".md"));
       $md = file_get_contents($closest_md);
       return YamlFrontMatter::parse($md);
     }
