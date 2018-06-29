@@ -210,7 +210,7 @@ class PatternLabDeriver extends LibraryDeriver {
 
         if (is_array($preview) && in_array("include()", array_keys($preview)) && isset($preview["include()"])) {
           $fields[$field]["type"] = "render";
-          $fields[$field]["preview"][] = $this->includePatternFiles($preview["include()"]);
+          $fields[$field]["preview"] = $this->includePatternFiles($preview["include()"]);
           $fields[$field]["description"] = t('Rendering of a @pattern pattern.', 
             ['@pattern' =>  $preview["include()"]["pattern"]]);
         }
@@ -218,8 +218,7 @@ class PatternLabDeriver extends LibraryDeriver {
         if (is_array($preview) && in_array("join()", array_keys($preview)) && isset($preview["join()"])) {
           $fields[$field]["type"] = "render";
           $fields[$field]["preview"] = $this->joinTextValues($preview["join()"]);
-          $fields[$field]["description"] = t('Rendering of patterns.', 
-            ['@pattern' =>  $preview["join()"]["pattern"]]);
+          $fields[$field]["description"] = t('Rendering of a pattern joining text values.');
         }
 
         if (is_array($preview) && in_array("Attribute()", array_keys($preview)) && isset($preview["Attribute()"])) {
