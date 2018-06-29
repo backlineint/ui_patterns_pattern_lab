@@ -23,7 +23,9 @@ trait PluginDataTransformTrait {
       // Advanced syntax
       $render_array = $preview['with'];
       $render_array["type"] = "pattern";
-      list($prefix, $pattern_id, $pseudo_pattern) = explode("-", $preview["pattern"]);
+      $shorthand = explode("-", $preview["pattern"]);
+      $pattern_name = str_replace($shorthand[0] . '-', "", $preview["pattern"]);
+      $pattern_id = str_replace("-", "_", $pattern_name);
       // ui_patterns doesn't manage variants yet. So, only patttern_id is set.
       // https://github.com/nuvoleweb/ui_patterns/issues/118
       $render_array["id"] = $pattern_id;
