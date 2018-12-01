@@ -1,0 +1,45 @@
+<?php
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * @file
+ * The UI Patterns Pattern Lab module automatically discovers patterns defined
+ * in a [Pattern Lab](http://patternlab.io/) instance and makes them available
+ * to be used in Drupal as [UI Patterns]
+ * (https://www.drupal.org/project/ui_patterns).
+ */
+
+/**
+ * Implements hook_help().
+ */
+function ui_patterns_pattern_lab_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.ui_patterns_pattern_lab':
+      $readme = __DIR__ . '/README.md';
+      $text = file_get_contents($readme);
+      $output = '';
+
+      // If the Markdown module is installed, use it to render the README.
+      if ($text && \Drupal::moduleHandler()->moduleExists('markdown') === TRUE) {
+        $filter_manager = \Drupal::service('plugin.manager.filter');
+        $settings = \Drupal::configFactory()->get('markdown.settings')->getRawData();
+        $config = ['settings' => $settings];
+        $filter = $filter_manager->createInstance('markdown', $config);
+        $output = $filter->process($text, 'en');
+      }
+      // Else the Markdown module is not installed output the README as text.
+      else if ($text) {
+        $output = '<pre>' . $text . '</pre>';
+      }
+
+      // Add a link to the Drupal.org project.
+      $output .= '<p>';
+      $output .= t('Visit the <a href=":project_link">project pages</a> on Drupal.org for more information.',[
+        ':project_link' => 'https://www.drupal.org/project/ui_patterns_pattern_lab'
+        ]);
+      $output .= '</p>';
+
+      return $output;
+  }
+
+}
