@@ -4,7 +4,9 @@ namespace Drupal\ui_patterns_pattern_lab\Plugin\Deriver;
 
 use Drupal\Component\Serialization\Yaml;
 use Drupal\Component\Serialization\Json;
+use Drupal\Core\Render\Markup;
 use Drupal\ui_patterns_library\Plugin\Deriver\LibraryDeriver;
+use Michelf\MarkdownExtra;
 use Spatie\YamlFrontMatter\YamlFrontMatter;
 
 /**
@@ -251,7 +253,7 @@ class PatternLabDeriver extends LibraryDeriver {
     else {
       // If there is a description in the body, return that. Otherwise this will
       // return an empty string.
-      return $documentation->body();
+      return  Markup::create(MarkdownExtra::defaultTransform($documentation->body()));
     }
   }
 

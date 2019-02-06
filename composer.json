@@ -12,6 +12,7 @@
   ],
   "require": {
     "drupal/ui_patterns": "^1.0@RC",
-    "spatie/yaml-front-matter": "^2.0"
+    "spatie/yaml-front-matter": "^2.0",
+    "michelf/php-markdown": "^1.8"
   }
 }
